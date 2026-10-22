@@ -97,6 +97,15 @@ if [ -f ".state_env_file" ] ; then
 		export KB_PATCH_DIR="${TOP_DEVDIR}/patches/${DISTRO_NAME}-${DISTRO_CODENAME}-${DISTRO_BRANCH}-${KVER}.${KMAJ}.0"
 	fi
 
+	# Fallback for newer/unsupported releases (e.g. Ubuntu 26.04.1 / 26.10)
+	if [ ! -d "${KB_PATCH_DIR}" ] ; then
+		fallback=$(ls -d ${TOP_DEVDIR}/patches/${DISTRO_NAME}-* 2>/dev/null | sort | tail -n 1)
+		if [ -n "${fallback}" ] ; then
+			echo "Warning: patch dir ${KB_PATCH_DIR} not found; falling back to ${fallback}"
+			export KB_PATCH_DIR="${fallback}"
+		fi
+	fi
+
 	DATE_STRING="+%y%m%d"
 fi
 
@@ -217,6 +226,13 @@ function get_ubuntu()
 		get_ubuntu_kver
 		write_state_env
 		export KB_PATCH_DIR="${TOP_DEVDIR}/patches/${DISTRO_NAME}-${DISTRO_CODENAME}-${KVER}.${KMAJ}.0"
+		if [ ! -d "${KB_PATCH_DIR}" ] ; then
+			fallback=$(ls -d ${TOP_DEVDIR}/patches/${DISTRO_NAME}-* 2>/dev/null | sort | tail -n 1)
+			if [ -n "${fallback}" ] ; then
+				echo "Warning: patch dir ${KB_PATCH_DIR} not found; falling back to ${fallback}"
+				export KB_PATCH_DIR="${fallback}"
+			fi
+		fi
 	fi
 	return ${ret_val}
 }
@@ -853,10 +869,10 @@ function final_deb_menu()
 	echo "=============================================="
 	echo "  Paso final: ¿qué deseas hacer?"
 	echo "=============================================="
-	echo "  1) Aplicar los drivers al kernel actual"
+	echo "  1) Aplicar los drivers al kernel actual (compila módulos media_build)"
 	echo "  2) Crear una versión deb del kernel instalado actualmente en Ubuntu"
 	echo "  3) Descargar la última versión del kernel de kernel.org"
-	echo "  4) Aplicar los cambios al kernel en ejecución"
+	echo "  4) Aplicar los cambios al kernel en ejecución (actualizar + GRUB)"
 	echo "  5) Cancelar"
 	echo "=============================================="
 	read -p "Opción [1-5]: " opt
@@ -864,19 +880,25 @@ function final_deb_menu()
 		1)
 			echo "Aplicando drivers al kernel actual..."
 			if [ ! -d "${TOP_DEVDIR}/media_build" ] ; then
-				get_media_build
+				get_media_build || { echo "No se pudo obtener media_build"; return 1; }
 			fi
-			cd "${TOP_DEVDIR}/media_build"
+			cd "${TOP_DEVDIR}/media_build" || return 1
+			echo "Limpiando compilación previa..."
+			make distclean >/dev/null 2>&1 || true
+			echo "Compilando drivers para el kernel $(uname -r)..."
 			make -j"$(nproc)"
 			if [ $? -eq 0 ] ; then
-				echo "Compilación correcta. Para instalar: sudo make install && sudo update-initramfs -u"
-				read -p "¿Instalar ahora? (YES/NO): " x
+				echo "Compilación correcta."
+				read -p "¿Instalar los módulos ahora? (YES/NO): " x
 				if [ "${x}" == "YES" ] ; then
 					sudo make install
-					sudo update-initramfs -u
+					sudo depmod -a
+					sudo update-initramfs -u -k "$(uname -r)"
+					echo "Drivers instalados. Reinicia si es necesario."
 				fi
 			else
-				echo "Error compilando drivers."
+				echo "Error compilando drivers. Revisa dependencias (build-essential, linux-headers-$(uname -r))."
+				return 1
 			fi
 			;;
 		2)
@@ -884,31 +906,43 @@ function final_deb_menu()
 			if [ -d "${TOP_DEVDIR}/${DISTRO_NAME}-${DISTRO_CODENAME}" ] ; then
 				generate_ppa_data virtual
 			else
-				echo "Primero inicializa el repositorio del kernel (-i) y aplica parches (-p)."
+				echo "Primero inicializa el repositorio del kernel (-i), aplica parches (-p) y genera datos (-c)."
+				return 1
 			fi
 			;;
 		3)
 			echo "Descargando última versión estable del kernel desde kernel.org..."
-			latest=$(curl -s https://www.kernel.org/releases.json 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); print([r for r in d.get("releases",[]) if r.get("moniker")=="stable"][0]["version"])' 2>/dev/null)
+			if ! command -v curl >/dev/null 2>&1 ; then
+				echo "curl no está instalado."
+				return 1
+			fi
+			latest=$(curl -s https://www.kernel.org/releases.json 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); r=[x for x in d.get("releases",[]) if x.get("moniker")=="stable"]; print(r[0]["version"] if r else "")' 2>/dev/null)
 			if [ -z "${latest}" ] ; then
 				echo "No se pudo obtener la versión. Comprueba la conexión."
 				return 1
 			fi
 			major=$(echo "${latest}" | cut -d. -f1)
 			url="https://cdn.kernel.org/pub/linux/kernel/v${major}.x/linux-${latest}.tar.xz"
+			out="${TOP_DEVDIR}/linux-${latest}.tar.xz"
+			echo "Versión: ${latest}"
 			echo "Descargando ${url} ..."
-			wget -c "${url}" -O "${TOP_DEVDIR}/linux-${latest}.tar.xz"
+			wget -c "${url}" -O "${out}"
 			if [ $? -eq 0 ] ; then
-				echo "Descargado en ${TOP_DEVDIR}/linux-${latest}.tar.xz"
-				tar -xf "${TOP_DEVDIR}/linux-${latest}.tar.xz" -C "${TOP_DEVDIR}"
+				echo "Descargado en ${out}"
+				tar -xf "${out}" -C "${TOP_DEVDIR}"
+				echo "Extraído en ${TOP_DEVDIR}/linux-${latest}"
 			else
 				echo "Error en la descarga."
+				return 1
 			fi
 			;;
 		4)
 			echo "Aplicando cambios al kernel en ejecución..."
 			sudo apt-get update
-			sudo apt-get install -y --only-upgrade linux-generic linux-image-generic 2>/dev/null || true
+			sudo apt-get install -y --only-upgrade linux-generic linux-image-generic linux-headers-generic 2>/dev/null || true
+			if command -v update-grub >/dev/null 2>&1 ; then
+				sudo update-grub
+			fi
 			echo "Si instalaste un kernel mediatree, reinicia para usarlo."
 			;;
 		5|*)
@@ -916,6 +950,7 @@ function final_deb_menu()
 			;;
 	esac
 }
+
 
 function init_mediatree_builder()
 {

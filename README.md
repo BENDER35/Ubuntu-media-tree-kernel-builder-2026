@@ -13,7 +13,7 @@ LinuxTV.org media tree drivers, with extra support for Hauppauge devices.
 
 ## Requirements
 
-- Ubuntu (supported releases: see `patches/`).
+- Ubuntu (supported releases: see `patches/` (newer releases such as 26.04.1/26.10 fall back to the latest available patch set)).
 - Build tools: `git`, `make`, `patch`, `fakeroot`, `debuild`, `equivs-build`.
 - Sufficient disk space and time (kernel builds are large).
 
