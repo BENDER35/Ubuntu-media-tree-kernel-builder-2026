@@ -991,10 +991,42 @@ function init_mediatree_builder()
 	return ${ret_val}
 }
 
+function auto_build_all()
+{
+	echo "=============================================="
+	echo "  Construcción automática completa"
+	echo "=============================================="
+	if [ ! -d "${TOP_DEVDIR}/${DISTRO_NAME}-${DISTRO_CODENAME}" ] ; then
+		echo "Inicializando repositorios..."
+		init_mediatree_builder || return 1
+	fi
+	if [ ! -d "${TOP_DEVDIR}/media_build" ] ; then
+		echo "Obteniendo media_build..."
+		get_media_build || return 1
+	fi
+	echo "Descargando media tree..."
+	download_media_tree || return 1
+	echo "Generando tarball parcheado..."
+	gen_media_tree_tarball_patched || return 1
+	echo "Aplicando parches mediatree..."
+	apply_patches || return 1
+	echo "Aplicando parches adicionales..."
+	apply_extra_patches || true
+	echo "Generando datos de compilación..."
+	generate_new_kernel_version || return 1
+	echo "Compilando kernel..."
+	build_kernel_bin || return 1
+	echo "Generando paquetes deb/PPA..."
+	generate_ppa_data all || return 1
+	echo "=============================================="
+	echo "  Construcción automática finalizada"
+	echo "=============================================="
+}
+
 function usage()
 {
 	echo "Usage:"
-	echo "  ${0} [-i|-m|-s|-p|-x|-c|-r|-g|-b|-F|-U|-h]"
+	echo "  ${0} [-i|-m|-s|-p|-x|-c|-r|-g|-b|-F|-U|-A|-h]"
 	echo "    -i  :  Initialize/update all git repositories"
 	echo "    -m  :  Download and generate latest LinuxTV.org media tree tarballs"
 	echo "    -s  :  Generate a vanilla media tree kernel patch from a tarball"
@@ -1004,6 +1036,7 @@ function usage()
 	echo "    -r  :  Hard reset build directory (wipes build dir clean!)"
 	echo "    -g  :  Generate full patchset since original revision"
 	echo "    -b  :  Build kernel (requires clean first unless build error)"
+	echo "    -A  :  Automatic full build: drivers + kernel + deb"
 	echo "    -F  :  Final step menu (deb creation / apply drivers / etc.)"
 	echo "    -U [k|d|p|a] : Uninstall kernel/drivers/ppa/all"
 	echo "    -h  :  This help"
@@ -1018,7 +1051,7 @@ fi
 # patch makefile to turn these on by default !
 #  skipmodule=true skipabi=true
 
-while getopts ":iI:mMrxCcgbB:spV:FU:" o; do
+while getopts ":iI:mMrxCcgbB:spV:FU:A" o; do
 	case "${o}" in
 	I|i)
 		if [ "${OPTARG}" == "media_build" ] ; then
@@ -1137,6 +1170,11 @@ while getopts ":iI:mMrxCcgbB:spV:FU:" o; do
 			a|all) uninstall_all ;;
 			*) echo "  -U [k|d|p|a]"; exit 1 ;;
 		esac
+		;;
+	A)
+		## App operation: automatic full build
+		auto_build_all
+		[ $? != 0 ] && exit 1
 		;;
 	h|*)
 		usage

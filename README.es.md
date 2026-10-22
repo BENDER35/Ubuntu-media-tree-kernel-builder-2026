@@ -102,6 +102,16 @@ sudo apt-get install linux-mediatree        # todos los Ubuntu
 sudo apt-get install linux-hwe-mediatree
 ```
 
+## Construcción automática completa (un solo comando)
+
+Descarga los drivers, los añade al kernel, compila y crea el `.deb` en un solo paso:
+
+```
+./mediatree-kbuild.sh -A
+```
+
+Esto ejecuta toda la tubería: inicialización, descarga del media tree, parcheo, compilación y generación del deb/PPA.
+
 ## Desinstalar
 
 ```

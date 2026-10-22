@@ -53,3 +53,15 @@ Kernel compilation uses `debian/rules` with `fakeroot`. It produces
 
 Use `-U` to remove the installed kernel virtual packages, the media tree
 workspace, or the PPA.
+
+
+## Automatic full build (one command)
+
+Download drivers, apply them to the kernel, build and create the `.deb` in one step:
+
+```
+./mediatree-kbuild.sh -A
+```
+
+This runs the whole pipeline: init, media tree download, patching, build and deb/PPA generation.
+
