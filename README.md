@@ -1,79 +1,124 @@
 # Ubuntu + LinuxTV.org media tree custom kernel builder
 
-The kernel that ships with Ubuntu is typically locked to a specific version,
-such as 4.4. When this happens support for new media devices and fixes to
-drivers are not usually backported by distro maintainers.
+This project builds installable Ubuntu kernel packages that include the latest
+LinuxTV.org media tree drivers, with extra support for Hauppauge devices.
 
-This system remedies that problem by taking the Ubuntu kernel and slip
-streams in the latest linuxtv.org media tree. The media tree contains
-all the latest drivers, so this delivers the most up to date mainline
-media drivers seamlessly to Ubuntu users.
+## Features
 
-The script is designed to patch and build installable Ubuntu kernel packages.
-This script is used to develop and maintain the following Launchpad PPA:
+- Slips the latest LinuxTV.org media tree into an Ubuntu kernel source tree.
+- Applies the minimal patches needed to build.
+- Builds installable `.deb` kernel packages.
+- Provides virtual packages for easy installation and upgrades.
+- Supports a PPA for end users.
 
-https://launchpad.net/~b-rad/+archive/ubuntu/kernel+mediatree+hauppauge
+## Requirements
 
-The above ppa provides installable and upgradeable debs, so end users do
-not have to recompile the kernel and/or modules themselves.
+- Ubuntu (supported releases: see `patches/`).
+- Build tools: `git`, `make`, `patch`, `fakeroot`, `debuild`, `equivs-build`.
+- Sufficient disk space and time (kernel builds are large).
 
-## To install and keep up to date with the PPA
+Install build dependencies (example):
 
-Two virtual package are provided in the PPA
- * linux-mediatree
- * linux-hwe-mediatree
-
-### First add the PPA and update
-
-sudo add-apt-repository ppa:b-rad/kernel+mediatree+hauppauge
-
+```
 sudo apt-get update
+sudo apt-get install -y git make patch fakeroot devscripts equivs build-essential libncurses-dev
+```
 
-### Then install the virtual packages (enables updates)
+## Quick start (full build)
 
-## All Ubuntu:
+1. Initialize repositories:
 
-sudo apt-get install linux-mediatree
+```
+./mediatree-kbuild.sh -i
+```
 
-## Ubuntu LTS w/HWE:
+2. Download and generate the LinuxTV media tree tarballs:
 
+```
+./mediatree-kbuild.sh -m
+```
+
+3. (Optional) Reset the kernel build directory to a clean state:
+
+```
+./mediatree-kbuild.sh -r
+```
+
+4. Apply the mediatree kbuild patches:
+
+```
+./mediatree-kbuild.sh -p
+```
+
+5. Apply extra patches:
+
+```
+./mediatree-kbuild.sh -x
+```
+
+6. Generate build data and clean:
+
+```
+./mediatree-kbuild.sh -c
+```
+
+7. Build the kernel:
+
+```
+./mediatree-kbuild.sh -b
+```
+
+   Or choose a build type:
+
+```
+./mediatree-kbuild.sh -B full
+./mediatree-kbuild.sh -B debug
+```
+
+8. Final step (deb creation / drivers / kernel.org):
+
+```
+./mediatree-kbuild.sh -F
+```
+
+## PPA / virtual package
+
+Build PPA descriptors:
+
+```
+./mediatree-kbuild.sh -V virtual
+./mediatree-kbuild.sh -V kernel
+./mediatree-kbuild.sh -V all
+```
+
+## Install from PPA (end users)
+
+```
+sudo add-apt-repository ppa:b-rad/kernel+mediatree+hauppauge
+sudo apt-get update
+sudo apt-get install linux-mediatree        # all Ubuntu
+# or, for LTS with HWE:
 sudo apt-get install linux-hwe-mediatree
+```
 
-The PPA will be updated quarterly, or immediately upon new Ubuntu kernel release.
+## Uninstall
 
-## Hauppauge Computer Works is proud sponsor of this effort.
+```
+./mediatree-kbuild.sh -U k   # uninstall kernel (virtual packages)
+./mediatree-kbuild.sh -U d   # remove media tree/drivers workspace
+./mediatree-kbuild.sh -U p   # remove PPA
+./mediatree-kbuild.sh -U a   # all of the above
+```
 
-http://www.hauppauge.com
+## Other useful commands
 
-## This script produces installable kernel packages from
- * Ubuntu kernel git for a specific release
- * Latest upstream LinuxTV media tree drivers
- * Minimal patches to get the above to build
- * Additional patches to enable HW and/or optimizations not yet upstreamed
-
-
-## This script also:
- * A full patch series for reproduction
- * Generate latest LinuxTV driver patch set on demand
-
-## Development use
-
-todo
+- Generate a full patchset: `./mediatree-kbuild.sh -g`
+- Show help: `./mediatree-kbuild.sh -h`
 
 ## Author
- * Brad Love <brad at nextdimension dot cc>
 
+Brad Love <brad at nextdimension dot cc>
 
 ## License
 
-This program utilizes the GNU Publicc License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later version.
-
-
-## Acknowledgments
-
-https://linuxtv.org
-
-https://ubuntu.org
-
-http://www.hauppauge.com
+GNU General Public License v3 or later.

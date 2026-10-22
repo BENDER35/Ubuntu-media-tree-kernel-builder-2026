@@ -816,6 +816,107 @@ function generate_ppa_data()
 	fi
 }
 
+function uninstall_kernel()
+{
+	echo "Uninstalling mediatree kernel (virtual packages and unused deps)..."
+	sudo apt-get remove --purge -y linux-mediatree linux-hwe-mediatree 2>/dev/null || true
+	sudo apt-get autoremove -y
+	echo "Kernel uninstall step finished."
+}
+
+function uninstall_drivers()
+{
+	echo "Removing media tree build tree and tarballs..."
+	rm -rf "${TOP_DEVDIR}/media_build"
+	rm -f "${TOP_DEVDIR}"/linux-media-tree-*.tgz
+	rm -f "${TOP_DEVDIR}/.flag-media-tree-sync-time"
+	echo "Drivers (LinuxTV media tree) removed from workspace."
+}
+
+function uninstall_ppa()
+{
+	echo "Removing Hauppauge media tree PPA..."
+	sudo add-apt-repository --remove -y ppa:b-rad/kernel+mediatree+hauppauge 2>/dev/null || true
+	sudo apt-get update
+	echo "PPA removal finished."
+}
+
+function uninstall_all()
+{
+	uninstall_kernel
+	uninstall_drivers
+	uninstall_ppa
+}
+
+function final_deb_menu()
+{
+	echo "=============================================="
+	echo "  Paso final: ¿qué deseas hacer?"
+	echo "=============================================="
+	echo "  1) Aplicar los drivers al kernel actual"
+	echo "  2) Crear una versión deb del kernel instalado actualmente en Ubuntu"
+	echo "  3) Descargar la última versión del kernel de kernel.org"
+	echo "  4) Aplicar los cambios al kernel en ejecución"
+	echo "  5) Cancelar"
+	echo "=============================================="
+	read -p "Opción [1-5]: " opt
+	case "${opt}" in
+		1)
+			echo "Aplicando drivers al kernel actual..."
+			if [ ! -d "${TOP_DEVDIR}/media_build" ] ; then
+				get_media_build
+			fi
+			cd "${TOP_DEVDIR}/media_build"
+			make -j"$(nproc)"
+			if [ $? -eq 0 ] ; then
+				echo "Compilación correcta. Para instalar: sudo make install && sudo update-initramfs -u"
+				read -p "¿Instalar ahora? (YES/NO): " x
+				if [ "${x}" == "YES" ] ; then
+					sudo make install
+					sudo update-initramfs -u
+				fi
+			else
+				echo "Error compilando drivers."
+			fi
+			;;
+		2)
+			echo "Creando paquete deb virtual del kernel actual..."
+			if [ -d "${TOP_DEVDIR}/${DISTRO_NAME}-${DISTRO_CODENAME}" ] ; then
+				generate_ppa_data virtual
+			else
+				echo "Primero inicializa el repositorio del kernel (-i) y aplica parches (-p)."
+			fi
+			;;
+		3)
+			echo "Descargando última versión estable del kernel desde kernel.org..."
+			latest=$(curl -s https://www.kernel.org/releases.json 2>/dev/null | python3 -c 'import sys,json; d=json.load(sys.stdin); print([r for r in d.get("releases",[]) if r.get("moniker")=="stable"][0]["version"])' 2>/dev/null)
+			if [ -z "${latest}" ] ; then
+				echo "No se pudo obtener la versión. Comprueba la conexión."
+				return 1
+			fi
+			major=$(echo "${latest}" | cut -d. -f1)
+			url="https://cdn.kernel.org/pub/linux/kernel/v${major}.x/linux-${latest}.tar.xz"
+			echo "Descargando ${url} ..."
+			wget -c "${url}" -O "${TOP_DEVDIR}/linux-${latest}.tar.xz"
+			if [ $? -eq 0 ] ; then
+				echo "Descargado en ${TOP_DEVDIR}/linux-${latest}.tar.xz"
+				tar -xf "${TOP_DEVDIR}/linux-${latest}.tar.xz" -C "${TOP_DEVDIR}"
+			else
+				echo "Error en la descarga."
+			fi
+			;;
+		4)
+			echo "Aplicando cambios al kernel en ejecución..."
+			sudo apt-get update
+			sudo apt-get install -y --only-upgrade linux-generic linux-image-generic 2>/dev/null || true
+			echo "Si instalaste un kernel mediatree, reinicia para usarlo."
+			;;
+		5|*)
+			echo "Cancelado."
+			;;
+	esac
+}
+
 function init_mediatree_builder()
 {
 	ret_val=0
@@ -858,7 +959,7 @@ function init_mediatree_builder()
 function usage()
 {
 	echo "Usage:"
-	echo "  ${0} [-i|-m|-s|-p|-x|-c|-r|-g|-b|-h]"
+	echo "  ${0} [-i|-m|-s|-p|-x|-c|-r|-g|-b|-F|-U|-h]"
 	echo "    -i  :  Initialize/update all git repositories"
 	echo "    -m  :  Download and generate latest LinuxTV.org media tree tarballs"
 	echo "    -s  :  Generate a vanilla media tree kernel patch from a tarball"
@@ -868,6 +969,8 @@ function usage()
 	echo "    -r  :  Hard reset build directory (wipes build dir clean!)"
 	echo "    -g  :  Generate full patchset since original revision"
 	echo "    -b  :  Build kernel (requires clean first unless build error)"
+	echo "    -F  :  Final step menu (deb creation / apply drivers / etc.)"
+	echo "    -U [k|d|p|a] : Uninstall kernel/drivers/ppa/all"
 	echo "    -h  :  This help"
 	echo ""
 }
@@ -880,7 +983,7 @@ fi
 # patch makefile to turn these on by default !
 #  skipmodule=true skipabi=true
 
-while getopts ":iI:mMrxCcgbB:spV:" o; do
+while getopts ":iI:mMrxCcgbB:spV:FU:" o; do
 	case "${o}" in
 	I|i)
 		if [ "${OPTARG}" == "media_build" ] ; then
@@ -897,6 +1000,9 @@ while getopts ":iI:mMrxCcgbB:spV:" o; do
 	m)
 		## App operation: get latest drivers and make patched tarball for a particular kernel
 		#
+		if [ ! -d "${TOP_DEVDIR}/media_build" ] ; then
+			get_media_build
+		fi
 		download_media_tree
 		gen_media_tree_tarball_patched	# generate patched tarball
 		[ $? != 0 ] && exit 1
@@ -904,6 +1010,9 @@ while getopts ":iI:mMrxCcgbB:spV:" o; do
 	M)
 		## App operation: App operation: unpack previous linuxtv.org tarball and patch for a particular kernel
 		#
+		if [ ! -d "${TOP_DEVDIR}/media_build" ] ; then
+			get_media_build
+		fi
 		unpack_media_tree
 		[ $? != 0 ] && exit 1
 		gen_media_tree_tarball_patched	# generate patched tarball
@@ -979,6 +1088,20 @@ while getopts ":iI:mMrxCcgbB:spV:" o; do
 			generate_ppa_data ${OPTARG}
 			[ $? != 0 ] && exit 133
 		fi
+		;;
+	F)
+		## App operation: final step menu
+		final_deb_menu
+		;;
+	U)
+		## App operation: uninstall
+		case "${OPTARG}" in
+			k) uninstall_kernel ;;
+			d) uninstall_drivers ;;
+			p) uninstall_ppa ;;
+			a|all) uninstall_all ;;
+			*) echo "  -U [k|d|p|a]"; exit 1 ;;
+		esac
 		;;
 	h|*)
 		usage
