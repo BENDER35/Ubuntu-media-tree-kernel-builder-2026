@@ -133,3 +133,8 @@ Brad Love <brad at nextdimension dot cc>
 ## Licencia
 
 GNU General Public License v3 o posterior.
+
+
+## Debian y distribuciones basadas en Debian
+
+Soporte experimental: el script usa como base las fuentes del kernel de Ubuntu en distros basadas en Debian (Debian, Linux Mint, Pop!_OS, etc.).

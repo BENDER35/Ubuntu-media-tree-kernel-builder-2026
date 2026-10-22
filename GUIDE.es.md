@@ -66,3 +66,7 @@ Descarga los drivers, los añade al kernel, compila y crea el `.deb` en un solo 
 
 Esto ejecuta toda la tubería: inicialización, descarga del media tree, parcheo, compilación y generación del deb/PPA.
 
+
+## Debian y distribuciones basadas en Debian
+
+Soporte experimental: el script usa como base las fuentes del kernel de Ubuntu en distros basadas en Debian (Debian, Linux Mint, Pop!_OS, etc.).

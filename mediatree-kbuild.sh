@@ -74,6 +74,23 @@ if [ -z "${DISTRO_CODENAME}" ] ; then
 	DISTRO_CODENAME=${VERSION_CODENAME}
 fi
 
+# Debian and Debian-based distributions support (experimental):
+# use Ubuntu kernel sources as a base when not running Ubuntu.
+case "${DISTRO_NAME}" in
+	ubuntu)
+		;;
+	debian|linuxmint|pop|elementary|zorin|kali|devuan|lmde)
+		echo "Debian-based distro (${DISTRO_NAME}) detected: using Ubuntu kernel source fallback."
+		DISTRO_NAME=ubuntu
+		case "${DISTRO_CODENAME}" in
+			bookworm|trixie|wilma|xia|virginia) DISTRO_CODENAME=noble ;;
+			*) [ -z "${DISTRO_CODENAME}" ] && DISTRO_CODENAME=noble ;;
+		esac
+		;;
+	*)
+		;;
+esac
+
 #[ -z "${DISTRO_GIT_REVISION}" ] && DISTRO_GIT_REVISION=50aaaec159365f8f8788e054048545e7ec9734f1
 
 ################################################

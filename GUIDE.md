@@ -65,3 +65,7 @@ Download drivers, apply them to the kernel, build and create the `.deb` in one s
 
 This runs the whole pipeline: init, media tree download, patching, build and deb/PPA generation.
 
+
+## Debian and Debian-based distributions
+
+Experimental support: the script falls back to Ubuntu kernel sources on Debian-based distros (Debian, Linux Mint, Pop!_OS, etc.).
