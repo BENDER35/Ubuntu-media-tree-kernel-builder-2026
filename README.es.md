@@ -126,9 +126,10 @@ Esto ejecuta toda la tubería: inicialización, descarga del media tree, parcheo
 - Generar conjunto completo de parches: `./mediatree-kbuild.sh -g`
 - Mostrar ayuda: `./mediatree-kbuild.sh -h`
 
-## Autor
+## Autores
 
-Brad Love <brad at nextdimension dot cc>
+- Autor del repositorio original: Brad Love <brad at nextdimension dot cc>
+- Mantenedor del fork y ajustes: BENDER (BENDER35)
 
 ## Licencia
 

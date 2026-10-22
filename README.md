@@ -125,9 +125,10 @@ This runs the whole pipeline: init, media tree download, patching, build and deb
 - Generate a full patchset: `./mediatree-kbuild.sh -g`
 - Show help: `./mediatree-kbuild.sh -h`
 
-## Author
+## Authors
 
-Brad Love <brad at nextdimension dot cc>
+- Original repository author: Brad Love <brad at nextdimension dot cc>
+- Fork maintainer/adjustments: BENDER (BENDER35)
 
 ## License
 
