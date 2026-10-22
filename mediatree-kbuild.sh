@@ -79,13 +79,23 @@ fi
 case "${DISTRO_NAME}" in
 	ubuntu)
 		;;
-	debian|linuxmint|pop|elementary|zorin|kali|devuan|lmde)
+	debian|linuxmint|pop|elementary|zorin|kali|devuan|lmde|sparky)
 		echo "Debian-based distro (${DISTRO_NAME}) detected: using Ubuntu kernel source fallback."
 		DISTRO_NAME=ubuntu
 		case "${DISTRO_CODENAME}" in
 			bookworm|trixie|wilma|xia|virginia) DISTRO_CODENAME=noble ;;
 			*) [ -z "${DISTRO_CODENAME}" ] && DISTRO_CODENAME=noble ;;
 		esac
+		;;
+	arch|archlinux|manjaro)
+		echo "Arch-based distro (${DISTRO_NAME}) detected: using Ubuntu kernel source fallback (experimental)."
+		DISTRO_NAME=ubuntu
+		[ -z "${DISTRO_CODENAME}" ] && DISTRO_CODENAME=noble
+		;;
+	fedora|rhel|centos|rocky|alma)
+		echo "Fedora/RHEL-based distro (${DISTRO_NAME}) detected: using Ubuntu kernel source fallback (experimental)."
+		DISTRO_NAME=ubuntu
+		[ -z "${DISTRO_CODENAME}" ] && DISTRO_CODENAME=noble
 		;;
 	opensuse*|sles|suse)
 		echo "openSUSE/SUSE distro (${DISTRO_NAME}) detected: using Ubuntu kernel source fallback (experimental)."

@@ -142,3 +142,8 @@ Experimental support: the script falls back to Ubuntu kernel sources on Debian-b
 ## openSUSE / SUSE
 
 Experimental support: falls back to Ubuntu kernel sources on openSUSE/SUSE systems.
+
+
+## Additional distributions
+
+Experimental fallback support for: Arch Linux, Manjaro, Fedora, RHEL/CentOS/Rocky/Alma, Linux Mint, SparkyLinux, Devuan, openSUSE/SUSE. All fall back to Ubuntu kernel sources.

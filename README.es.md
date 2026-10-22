@@ -143,3 +143,8 @@ Soporte experimental: el script usa como base las fuentes del kernel de Ubuntu e
 ## openSUSE / SUSE
 
 Soporte experimental: usa como base las fuentes del kernel de Ubuntu en sistemas openSUSE/SUSE.
+
+
+## Distribuciones adicionales
+
+Soporte experimental de fallback para: Arch Linux, Manjaro, Fedora, RHEL/CentOS/Rocky/Alma, Linux Mint, SparkyLinux, Devuan, openSUSE/SUSE. Todas usan como base las fuentes del kernel de Ubuntu.
