@@ -69,3 +69,8 @@ This runs the whole pipeline: init, media tree download, patching, build and deb
 ## Debian and Debian-based distributions
 
 Experimental support: the script falls back to Ubuntu kernel sources on Debian-based distros (Debian, Linux Mint, Pop!_OS, etc.).
+
+
+## openSUSE / SUSE
+
+Experimental support: falls back to Ubuntu kernel sources on openSUSE/SUSE systems.

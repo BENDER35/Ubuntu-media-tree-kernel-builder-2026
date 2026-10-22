@@ -87,6 +87,11 @@ case "${DISTRO_NAME}" in
 			*) [ -z "${DISTRO_CODENAME}" ] && DISTRO_CODENAME=noble ;;
 		esac
 		;;
+	opensuse*|sles|suse)
+		echo "openSUSE/SUSE distro (${DISTRO_NAME}) detected: using Ubuntu kernel source fallback (experimental)."
+		DISTRO_NAME=ubuntu
+		[ -z "${DISTRO_CODENAME}" ] && DISTRO_CODENAME=noble
+		;;
 	*)
 		;;
 esac
