@@ -80,3 +80,12 @@ Soporte experimental: usa como base las fuentes del kernel de Ubuntu en sistemas
 ## Distribuciones adicionales
 
 Soporte experimental de fallback para: Arch Linux, Manjaro, Fedora, RHEL/CentOS/Rocky/Alma, Linux Mint, SparkyLinux, Devuan, openSUSE/SUSE. Todas usan como base las fuentes del kernel de Ubuntu.
+
+
+## Paquete RPM
+
+Generar un RPM de la herramienta (requiere `rpmbuild`):
+
+```
+./mediatree-kbuild.sh -R
+```

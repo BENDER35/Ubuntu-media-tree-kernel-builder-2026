@@ -79,3 +79,12 @@ Experimental support: falls back to Ubuntu kernel sources on openSUSE/SUSE syste
 ## Additional distributions
 
 Experimental fallback support for: Arch Linux, Manjaro, Fedora, RHEL/CentOS/Rocky/Alma, Linux Mint, SparkyLinux, Devuan, openSUSE/SUSE. All fall back to Ubuntu kernel sources.
+
+
+## RPM package
+
+Build an RPM of the tool (requires `rpmbuild`):
+
+```
+./mediatree-kbuild.sh -R
+```

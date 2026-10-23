@@ -1055,10 +1055,67 @@ function auto_build_all()
 	echo "=============================================="
 }
 
+function build_rpm_package()
+{
+	if ! command -v rpmbuild >/dev/null 2>&1 ; then
+		echo "rpmbuild no está instalado. Instálalo (rpm-build) para generar RPM."
+		return 1
+	fi
+
+	RPM_VER="0.4.7"
+	RPMTOP="${HOME}/rpmbuild"
+	mkdir -p "${RPMTOP}"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+
+	echo "Generando tarball fuente..."
+	git archive --format=tar.gz --prefix=mediatree-kbuild-${RPM_VER}/ -o "${RPMTOP}/SOURCES/mediatree-kbuild-${RPM_VER}.tar.gz" HEAD
+
+	cat > "${RPMTOP}/SPECS/mediatree-kbuild.spec" <<SPEC
+Name:           mediatree-kbuild
+Version:        ${RPM_VER}
+Release:        1%{?dist}
+Summary:        Ubuntu media tree kernel builder with Hauppauge drivers
+License:        GPLv3+
+Source0:        %{name}-%{version}.tar.gz
+BuildArch:      noarch
+
+%description
+Tools and documentation to build Ubuntu kernel packages including the
+LinuxTV.org media tree drivers (Hauppauge support).
+
+%prep
+%setup -q
+
+%build
+
+%install
+mkdir -p %{buildroot}/usr/bin
+install -m 0755 mediatree-kbuild.sh %{buildroot}/usr/bin/mediatree-kbuild
+mkdir -p %{buildroot}/usr/share/doc/%{name}
+install -m 0644 README.md README.es.md GUIDE.md GUIDE.es.md %{buildroot}/usr/share/doc/%{name}/ 2>/dev/null || true
+
+%files
+/usr/bin/mediatree-kbuild
+%doc /usr/share/doc/%{name}
+
+%changelog
+* Fri Oct 23 2026 BENDER <grandrodri3@gmail.com> - ${RPM_VER}-1
+- RPM package for mediatree-kbuild.
+SPEC
+
+	echo "Compilando RPM..."
+	rpmbuild -ba "${RPMTOP}/SPECS/mediatree-kbuild.spec"
+	if [ $? -eq 0 ] ; then
+		echo "RPM generado en ${RPMTOP}/RPMS/"
+	else
+		echo "Error generando RPM."
+		return 1
+	fi
+}
+
 function usage()
 {
 	echo "Usage:"
-	echo "  ${0} [-i|-m|-s|-p|-x|-c|-r|-g|-b|-F|-U|-A|-h]"
+	echo "  ${0} [-i|-m|-s|-p|-x|-c|-r|-g|-b|-F|-U|-A|-R|-h]"
 	echo "    -i  :  Initialize/update all git repositories"
 	echo "    -m  :  Download and generate latest LinuxTV.org media tree tarballs"
 	echo "    -s  :  Generate a vanilla media tree kernel patch from a tarball"
@@ -1069,6 +1126,7 @@ function usage()
 	echo "    -g  :  Generate full patchset since original revision"
 	echo "    -b  :  Build kernel (requires clean first unless build error)"
 	echo "    -A  :  Automatic full build: drivers + kernel + deb"
+	echo "    -R  :  Build an RPM package of the tool"
 	echo "    -F  :  Final step menu (deb creation / apply drivers / etc.)"
 	echo "    -U [k|d|p|a] : Uninstall kernel/drivers/ppa/all"
 	echo "    -h  :  This help"
@@ -1083,7 +1141,7 @@ fi
 # patch makefile to turn these on by default !
 #  skipmodule=true skipabi=true
 
-while getopts ":iI:mMrxCcgbB:spV:FU:A" o; do
+while getopts ":iI:mMrxCcgbB:spV:FU:AR" o; do
 	case "${o}" in
 	I|i)
 		if [ "${OPTARG}" == "media_build" ] ; then
@@ -1206,6 +1264,11 @@ while getopts ":iI:mMrxCcgbB:spV:FU:A" o; do
 	A)
 		## App operation: automatic full build
 		auto_build_all
+		[ $? != 0 ] && exit 1
+		;;
+	R)
+		## App operation: build RPM package
+		build_rpm_package
 		[ $? != 0 ] && exit 1
 		;;
 	h|*)
