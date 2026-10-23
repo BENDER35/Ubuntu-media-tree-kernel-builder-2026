@@ -88,3 +88,8 @@ Build an RPM of the tool (requires `rpmbuild`):
 ```
 ./mediatree-kbuild.sh -R
 ```
+
+
+## Drivers and firmware on the running kernel
+
+Option 1 of `-F` compiles the media tree modules for the running kernel and installs `linux-firmware` for Hauppauge devices.

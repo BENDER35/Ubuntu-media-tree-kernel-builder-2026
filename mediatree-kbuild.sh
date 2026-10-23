@@ -925,8 +925,10 @@ function final_deb_menu()
 				if [ "${x}" == "YES" ] ; then
 					sudo make install
 					sudo depmod -a
+					echo "Instalando firmware (linux-firmware)..."
+					sudo apt-get install -y linux-firmware 2>/dev/null || true
 					sudo update-initramfs -u -k "$(uname -r)"
-					echo "Drivers instalados. Reinicia si es necesario."
+					echo "Drivers y firmware instalados. Reinicia si es necesario."
 				fi
 			else
 				echo "Error compilando drivers. Revisa dependencias (build-essential, linux-headers-$(uname -r))."
